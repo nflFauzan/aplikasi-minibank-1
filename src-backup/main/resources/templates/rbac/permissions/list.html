@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Permission Management</title>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="flex justify-between items-center mb-6">
+            <h1 id="page-title" class="text-3xl font-bold text-bsi-darker">Permission Management</h1>
+            <a th:href="@{/rbac/permissions/create}" 
+               class="bg-bsi-primary hover:bg-bsi-teal text-white font-bold py-2 px-4 rounded"
+               id="create-permission-btn">
+                Create Permission
+            </a>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" 
+             class="bg-bsi-success bg-opacity-20 border border-bsi-success text-bsi-success px-4 py-3 rounded mb-4"
+             id="success-message">
+            <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" 
+             class="bg-bsi-secondary bg-opacity-20 border border-bsi-secondary text-bsi-secondary px-4 py-3 rounded mb-4"
+             id="error-message">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- Filter Form -->
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <form th:action="@{/rbac/permissions/list}" method="get" class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label for="category" class="block text-sm font-medium text-bsi-dark mb-2">Filter by Category</label>
+                    <select id="category" 
+                            name="category" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-bsi-primary focus:border-bsi-primary">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categories}" 
+                                th:value="${cat}" 
+                                th:text="${cat}"
+                                th:selected="${cat == category}"></option>
+                    </select>
+                </div>
+                <button type="submit" 
+                        class="bg-bsi-accent hover:bg-bsi-secondary text-white font-bold py-2 px-4 rounded"
+                        id="filter-btn">
+                    Filter
+                </button>
+                <a th:href="@{/rbac/permissions/list}" 
+                   class="bg-bsi-bg-light hover:bg-gray-400 text-bsi-dark font-bold py-2 px-4 rounded"
+                   id="clear-filter-btn">
+                    Clear
+                </a>
+            </form>
+        </div>
+
+        <!-- Permissions Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200" id="permissions-table">
+                <thead class="bg-bsi-bg-light">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-bsi-gray uppercase tracking-wider">Permission Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-bsi-gray uppercase tracking-wider">Permission Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-bsi-gray uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-bsi-gray uppercase tracking-wider">Created Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-bsi-gray uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr th:if="${permissions.empty}">
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500" id="no-permissions-message">No permissions found</td>
+                    </tr>
+                    <tr th:each="permission : ${permissions.content}" class="permission-row" th:data-permission-id="${permission.id}" th:id="'permission-row-' + ${permission.permissionCode}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900" th:text="${permission.permissionCode}" th:id="'permission-code-' + ${permission.permissionCode}"></div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900" th:text="${permission.permissionName}"></div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-bsi-info bg-opacity-20 text-bsi-info" th:text="${permission.permissionCategory}"></span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" 
+                            th:text="${#temporals.format(permission.createdDate, 'dd/MM/yyyy')}"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <a th:href="@{/rbac/permissions/view/{id}(id=${permission.id})}" 
+                               class="text-bsi-info hover:text-bsi-primary view-permission-btn"
+                               th:id="'view-permission-' + ${permission.permissionCode}">View</a>
+                            <a th:href="@{/rbac/permissions/edit/{id}(id=${permission.id})}" 
+                               class="text-bsi-primary hover:text-bsi-teal edit-permission-btn"
+                               th:id="'edit-permission-' + ${permission.permissionCode}">Edit</a>
+                            
+                            <!-- Delete -->
+                            <form th:action="@{/rbac/permissions/delete/{id}(id=${permission.id})}" method="post" class="inline" 
+                                  onsubmit="return confirm('Are you sure you want to delete this permission?')">
+                                <button type="submit" class="text-bsi-secondary hover:text-bsi-orange-dark delete-permission-btn"
+                                        th:id="'delete-permission-' + ${permission.permissionCode}">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div th:if="${permissions.totalPages > 1}" class="mt-6 flex justify-between items-center">
+            <div class="text-sm text-gray-700">
+                Page <span th:text="${permissions.number + 1}"></span> of <span th:text="${permissions.totalPages}"></span>
+                (<span th:text="${permissions.totalElements}"></span> total results)
+            </div>
+            <div class="flex space-x-1">
+                <!-- Previous -->
+                <a th:if="${permissions.hasPrevious()}" 
+                   th:href="@{/rbac/permissions/list(page=${permissions.number - 1}, size=${pageSize}, category=${category})}"
+                   class="px-3 py-2 bg-bsi-bg-light text-bsi-dark rounded hover:bg-gray-400"
+                   id="prev-page-btn">Previous</a>
+                
+                <!-- Current page indicator -->
+                <span class="px-3 py-2 bg-bsi-primary text-white rounded current-page" 
+                      th:text="${permissions.number + 1}"></span>
+                
+                <!-- Next -->
+                <a th:if="${permissions.hasNext()}" 
+                   th:href="@{/rbac/permissions/list(page=${permissions.number + 1}, size=${pageSize}, category=${category})}"
+                   class="px-3 py-2 bg-bsi-bg-light text-bsi-dark rounded hover:bg-gray-400"
+                   id="next-page-btn">Next</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
